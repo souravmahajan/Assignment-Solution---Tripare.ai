@@ -1,1 +1,132 @@
+infra/
+├── modules/
+│   ├── network/
+│   ├── ecs/
+│   └── rds/
+└── envs/
+    ├── dev/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   ├── terraform.tfvars
+    │   └── backend.tf
+    └── prod/
+        ├── main.tf
+        ├── variables.tf
+        ├── terraform.tfvars
+        └── backend.tf
+
+
+# Step 1 modules/rds/main.tf
+
+resource "aws_db_instance" "this" {
+  identifier        = var.name
+  engine            = "postgres"
+  instance_class    = var.instance_class
+  allocated_storage = var.storage
+
+  db_name  = "appdb"
+  username = var.username
+  password = var.password
+
+  backup_retention_period = var.backup_retention
+  deletion_protection     = var.deletion_protection
+
+  skip_final_snapshot = !var.deletion_protection
+}
+
+# modules/rds/variables.tf
+
+variable "name" {}
+variable "instance_class" {}
+variable "storage" {}
+variable "username" {}
+variable "password" {
+  sensitive = true
+}
+variable "backup_retention" {}
+variable "deletion_protection" {}
+
+# envs/dev/main.tf
+
+provider "aws" {
+  region = var.region
+}
+
+module "rds" {
+  source = "../../modules/rds"
+
+  name                = "app-dev"
+  instance_class      = var.rds_instance_class
+  storage             = 20
+  username            = var.db_username
+  password            = var.db_password
+  backup_retention    = var.backup_retention
+  deletion_protection = var.deletion_protection
+}
+
+# envs/dev/variables.tf
+
+variable "region" {}
+variable "rds_instance_class" {}
+variable "backup_retention" {}
+variable "deletion_protection" {}
+variable "db_username" {}
+variable "db_password" {
+  sensitive = true
+}
+
+# envs/dev/terraform.tfvars
+
+region                = "ap-south-1"
+rds_instance_class    = "db.t4g.micro"
+backup_retention      = 3
+deletion_protection   = false
+db_username           = "admin"
+db_password           = "dev-password"
+
+# envs/prod/main.tf Same as dev/main.tf, but the environment values are different.
+
+module "rds" {
+  source = "../../modules/rds"
+
+  name                = "app-prod"
+  instance_class      = var.rds_instance_class
+  storage             = 100
+  username            = var.db_username
+  password            = var.db_password
+  backup_retention    = var.backup_retention
+  deletion_protection = var.deletion_protection
+}
+
+# envs/prod/terraform.tfvars
+
+region                = "ap-south-1"
+rds_instance_class    = "db.t4g.medium"
+backup_retention      = 30
+deletion_protection   = true
+db_username           = "admin"
+db_password           = "prod-password"
+
+
+#Separate backend state
+
+#Dev:
+
+terraform {
+  backend "s3" {
+    bucket = "terraform-state"
+    key    = "dev/terraform.tfstate"
+    region = "ap-south-1"
+  }
+}
+
+#Prod:
+terraform {
+  backend "s3" {
+    bucket = "terraform-state"
+    key    = "prod/terraform.tfstate"
+    region = "ap-south-1"
+  }
+}
+
 
