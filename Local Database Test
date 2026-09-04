@@ -1,0 +1,61 @@
+database/
+├── docker-compose.yml
+└── init.sql
+
+# docker-compose.yml
+
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: hotel-postgres
+    environment:
+      POSTGRES_DB: hotel_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  postgres_data:
+
+# init.sql
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE hotel_bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    org_id UUID NOT NULL,
+    hotel_id VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    checkin_date DATE NOT NULL,
+    checkout_date DATE NOT NULL,
+    amount NUMERIC(12,2) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE booking_events (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id UUID NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    payload JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_booking
+        FOREIGN KEY (booking_id)
+        REFERENCES hotel_bookings(id)
+);
+
+
+
+# Testing 
+
+# Start the database - cd database  then run docker compose up -d
+# Check POSTGRESQL is running or not - docker ps
+# Connect to Database - docker exec -it hotel-postgres psql -U admin -d hotel_db
+# Verify the tables  - \dt It will list all the table in current database.
