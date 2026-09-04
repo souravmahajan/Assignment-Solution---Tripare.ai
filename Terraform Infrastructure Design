@@ -1,0 +1,18 @@
+| Assignment requirement | Terraform implementation                      |
+| ---------------------- | --------------------------------------------- |
+| VPC                    | `aws_vpc`                                     |
+| Public subnets         | `aws_subnet.public`                           |
+| Private subnets        | `aws_subnet.private`                          |
+| ALB SG                 | `aws_security_group.alb`                      |
+| ECS SG                 | `aws_security_group.ecs`                      |
+| RDS SG                 | `aws_security_group.rds`                      |
+| ECS Cluster            | `aws_ecs_cluster`                             |
+| Fargate                | `aws_ecs_task_definition` + `aws_ecs_service` |
+| Application container  | `nginx:latest`                                |
+| ALB                    | `aws_lb`                                      |
+| ALB → ECS              | `aws_lb_target_group` + listener              |
+| PostgreSQL             | `aws_db_instance`                             |
+| RDS private            | `publicly_accessible = false`                 |
+| RDS only from ECS      | RDS SG allows only ECS SG                     |
+__________________________________________________________________________
+
