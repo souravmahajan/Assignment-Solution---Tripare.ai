@@ -1,0 +1,44 @@
+# Step 1 Generate 100 + hotel bookings
+#This generates 100 bookings with:4 organizations,4 cities,4 statuses,Dates spread across the last 30 days
+
+INSERT INTO hotel_bookings
+    (org_id, city, status, amount, created_at)
+SELECT
+    ((gs - 1) % 4) + 1 AS org_id,
+    CASE
+        WHEN gs % 4 = 0 THEN 'Noida'
+        WHEN gs % 4 = 1 THEN 'Gurgaon'
+        WHEN gs % 4 = 2 THEN 'Delhi'
+        ELSE 'hyderabad'
+    END AS city,
+    CASE
+        WHEN gs % 4 = 0 THEN 'confirmed'
+        WHEN gs % 4 = 1 THEN 'pending'
+        WHEN gs % 4 = 2 THEN 'cancelled'
+        ELSE 'completed'
+    END AS status,
+    NOW() - ((gs % 30) || ' days')::interval AS created_at
+FROM generate_series(1, 100) AS gs;
+
+#Step 2 Insert booking events for some bookings
+INSERT INTO booking_events
+    (booking_id, event_type, created_at)
+SELECT
+    id,
+    CASE
+        WHEN id % 3 = 0 THEN 'booking_created'
+        WHEN id % 3 = 1 THEN 'booking_confirmed'
+        ELSE 'payment_completed'
+    END,
+    created_at + INTERVAL '1 hour'
+FROM hotel_bookings
+WHERE id % 3 = 0;
+
+# Adding index 
+
+CREATE INDEX idx_hotel_bookings_city_created_at
+ON hotel_bookings (city, created_at);
+
+
+
+
